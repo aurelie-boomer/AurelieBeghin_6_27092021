@@ -78,16 +78,19 @@ exports.getAllSauce = (req, res, next) => {
 };
 
 exports.likeSauce = (req, res, next) => {
+  //Gestion des likes et dislikes
   const like = req.body.like;
   const dislike = req.body.dislike;
   const userId = req.body.userId;
   const userLiked = req.body.userLiked;
   const userDisliked = req.body.userDisliked;
 
-  Sauce.findOne({ _id: req.params.id })
+  Sauce.findOne({ _id: req.params.id }) //on recherche une sauce
     .then((sauce) => {
       if (like === 1) {
+        // clic sur le like
         if (!sauce.usersLiked.includes(userId)) {
+          // si l'user est différent alors on incrémente 1
           sauce.usersLiked.push(userId);
           sauce.like++;
           sauce
@@ -95,6 +98,7 @@ exports.likeSauce = (req, res, next) => {
             .then(() => res.status(201).json({ message: "Sauce likée" }))
             .catch((error) => res.status(400).json({ error }));
         } else {
+          //sinon on refuse le clic
           res
             .status(403)
             .json({
@@ -103,7 +107,9 @@ exports.likeSauce = (req, res, next) => {
             .catch((error) => res.status(400).json({ error }));
         }
       } else if (like === -1) {
+        // clic sur le dislike
         if (!sauce.usersDisliked.includes(userId)) {
+          //si l'user est différent alors on incrémente -1
           sauce.usersDisliked.push(userId);
           sauce.dislike++;
           sauce
@@ -119,16 +125,19 @@ exports.likeSauce = (req, res, next) => {
             .catch((error) => res.status(400).json({ error }));
         }
       } else if (like === 0) {
+        // like enlevé
         if (sauce.usersLiked.includes(userId)) {
+          //si c'est le même user qui a déjà liké cette sauce
           sauce.usersLiked.pull(userId);
-          sauce.like--;
+          sauce.like--; // on enlève le like
           sauce
             .save()
             .then(() => res.status(201).json({ message: "Sauce unlikée" }))
             .catch((error) => res.status(400).json({ error }));
         } else if (sauce.usersDisliked.includes(userId)) {
+          //si c'est le même user qui a déjà liké cette sauce
           sauce.usersDisliked.pull(userId);
-          sauce.dislike--;
+          sauce.dislike--; //on enlève le dislike
           sauce
             .save()
             .then(() => res.status(201).json({ message: "Sauce undislikée" }))
