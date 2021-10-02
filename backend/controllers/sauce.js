@@ -35,20 +35,28 @@ exports.getOneSauce = (req, res, next) => {
 };
 
 exports.modifySauce = (req, res, next) => {
-  const sauceObject = req.file
-    ? {
-        ...JSON.parse(req.body.sauce),
-        imageUrl: `${req.protocol}://${req.get("host")}/images/${
-          req.file.filename
-        }`,
-      }
-    : { ...req.body };
-  Sauce.updateOne(
-    { _id: req.params.id },
-    { ...sauceObject, _id: req.params.id }
-  )
-    .then(() => res.status(200).json({ message: "Sauce modifiée !" }))
-    .catch((error) => res.status(400).json({ error }));
+  console.log(req.headers);
+  console.log(req.body);
+  Sauce.findOne({ _id: req.params.id }).then((sauce) => {
+    if (sauce.userId !== req.body.userId) {
+      res.status(403).json({ message: "requête non autorisée" });
+      return;
+    }
+    const sauceObject = req.file
+      ? {
+          ...JSON.parse(req.body.sauce),
+          imageUrl: `${req.protocol}://${req.get("host")}/images/${
+            req.file.filename
+          }`,
+        }
+      : { ...req.body };
+    Sauce.updateOne(
+      { _id: req.params.id },
+      { ...sauceObject, _id: req.params.id }
+    )
+      .then(() => res.status(200).json({ message: "Sauce modifiée !" }))
+      .catch((error) => res.status(400).json({ error }));
+  });
 };
 
 exports.deleteSauce = (req, res, next) => {
@@ -79,25 +87,25 @@ exports.getAllSauce = (req, res, next) => {
 
 exports.likeSauce = (req, res, next) => {
   //Gestion des likes et dislikes
+  console.log(req.body);
   const like = req.body.like;
-  const dislike = req.body.dislike;
   const userId = req.body.userId;
-  const userLiked = req.body.userLiked;
-  const userDisliked = req.body.userDisliked;
 
   Sauce.findOne({ _id: req.params.id }) //on recherche une sauce
     .then((sauce) => {
       if (like === 1) {
+        console.log("if");
         // clic sur le like
         if (!sauce.usersLiked.includes(userId)) {
           // si l'user est différent alors on incrémente 1
           sauce.usersLiked.push(userId);
-          sauce.like++;
+          sauce.likes++;
           sauce
             .save()
             .then(() => res.status(201).json({ message: "Sauce likée" }))
             .catch((error) => res.status(400).json({ error }));
         } else {
+          console.log("else");
           //sinon on refuse le clic
           res
             .status(403)
@@ -107,16 +115,19 @@ exports.likeSauce = (req, res, next) => {
             .catch((error) => res.status(400).json({ error }));
         }
       } else if (like === -1) {
+        console.log("elseif");
         // clic sur le dislike
         if (!sauce.usersDisliked.includes(userId)) {
+          console.log("if3");
           //si l'user est différent alors on incrémente -1
           sauce.usersDisliked.push(userId);
-          sauce.dislike++;
+          sauce.dislikes++;
           sauce
             .save()
             .then(() => res.status(201).json({ message: "Sauce dislikée" }))
             .catch((error) => res.status(400).json({ error }));
         } else {
+          console.log("else2");
           res
             .status(403)
             .json({
@@ -129,7 +140,7 @@ exports.likeSauce = (req, res, next) => {
         if (sauce.usersLiked.includes(userId)) {
           //si c'est le même user qui a déjà liké cette sauce
           sauce.usersLiked.pull(userId);
-          sauce.like--; // on enlève le like
+          sauce.likes--; // on enlève le like
           sauce
             .save()
             .then(() => res.status(201).json({ message: "Sauce unlikée" }))
@@ -137,7 +148,7 @@ exports.likeSauce = (req, res, next) => {
         } else if (sauce.usersDisliked.includes(userId)) {
           //si c'est le même user qui a déjà liké cette sauce
           sauce.usersDisliked.pull(userId);
-          sauce.dislike--; //on enlève le dislike
+          sauce.dislikes--; //on enlève le dislike
           sauce
             .save()
             .then(() => res.status(201).json({ message: "Sauce undislikée" }))
